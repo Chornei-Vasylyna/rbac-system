@@ -17,7 +17,10 @@
 		"lint": "oxlint src/ test/",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",
-		"db:logs": "docker compose logs -f"
+		"db:logs": "docker compose logs -f",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@nestjs/common": "^12.0.1",
