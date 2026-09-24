@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { DrizzleModule } from "./db/drizzle.module.js";
 
 @Module({
 	imports: [
@@ -7,6 +8,7 @@ import { ConfigModule } from "@nestjs/config";
 			isGlobal: true,
 			expandVariables: true,
 		}),
+		DrizzleModule,
 	],
 	controllers: [],
 	providers: [],
