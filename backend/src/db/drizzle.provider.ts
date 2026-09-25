@@ -1,5 +1,5 @@
 import { ConfigService } from "@nestjs/config";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
 export const DRIZZLE = Symbol("DRIZZLE_CONNECTION");
@@ -16,3 +16,5 @@ export const drizzleProvider = {
 		return drizzle({ client: pool });
 	},
 };
+
+export type Database = NodePgDatabase;
