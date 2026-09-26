@@ -5,6 +5,7 @@ import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard.js";
 import { RolesGuard } from "./guards/roles.guard.js";
+import { TokenService } from "./token.service.js";
 
 @Module({
 	imports: [
@@ -22,7 +23,7 @@ import { RolesGuard } from "./guards/roles.guard.js";
 		}),
 	],
 	controllers: [AuthController],
-	providers: [AuthService, JwtAuthGuard, RolesGuard],
+	providers: [AuthService, TokenService, JwtAuthGuard, RolesGuard],
 	exports: [JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

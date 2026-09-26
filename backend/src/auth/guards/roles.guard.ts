@@ -2,9 +2,10 @@ import {
 	type CanActivate,
 	type ExecutionContext,
 	ForbiddenException,
+	Inject,
 	Injectable,
 } from "@nestjs/common";
-import type { Reflector } from "@nestjs/core";
+import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 import type { AuthenticatedUser } from "../auth.types.js";
 import { ROLES_KEY } from "../decorators/roles.decorator.js";
@@ -26,6 +27,7 @@ export class RolesGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
 		const hasRole = requiredRoles.some((role) =>
 			request.user.roles.includes(role),
 		);
