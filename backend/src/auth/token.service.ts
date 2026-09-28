@@ -23,8 +23,8 @@ import type {
 export class TokenService {
 	constructor(
 		@Inject(DRIZZLE) private readonly db: Database,
-		@Inject(JwtService) private readonly jwtService: JwtService,
-		@Inject(ConfigService) private readonly configService: ConfigService,
+		private readonly jwtService: JwtService,
+		private readonly configService: ConfigService,
 	) {}
 
 	async issueTokens(user: AuthenticatedUser) {

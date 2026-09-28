@@ -9,15 +9,15 @@ import { eq } from "drizzle-orm";
 import type { Database } from "../db/drizzle.provider.js";
 import { DRIZZLE } from "../db/drizzle.provider.js";
 import { roles, users, usersToRoles } from "../db/schema/index.js";
-import type { LoginDto } from "./dto/login.dto.js";
-import type { RegisterDto } from "./dto/register.dto.js";
+import { LoginDto } from "./dto/login.dto.js";
+import { RegisterDto } from "./dto/register.dto.js";
 import { TokenService } from "./token.service.js";
 
 @Injectable()
 export class AuthService {
 	constructor(
 		@Inject(DRIZZLE) private readonly db: Database,
-		@Inject(TokenService) private readonly tokenService: TokenService,
+		private readonly tokenService: TokenService,
 	) {}
 
 	async register(dto: RegisterDto) {

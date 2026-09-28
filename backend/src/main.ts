@@ -1,4 +1,4 @@
-import { ValidationPipe } from "@nestjs/common";
+import { BadRequestException, ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import cookieParser from "cookie-parser";
@@ -19,6 +19,20 @@ async function bootstrap() {
 			whitelist: true,
 			forbidNonWhitelisted: true,
 			transform: true,
+			exceptionFactory: (errors) => {
+				const formattedErrors = errors.reduce(
+					(acc, error) => {
+						acc[error.property] = Object.values(error.constraints ?? {})[0];
+						return acc;
+					},
+					{} as Record<string, string>,
+				);
+
+				return new BadRequestException({
+					statusCode: 400,
+					errors: formattedErrors,
+				});
+			},
 		}),
 	);
 

@@ -1,7 +1,6 @@
 import {
 	type CanActivate,
 	type ExecutionContext,
-	Inject,
 	Injectable,
 	UnauthorizedException,
 } from "@nestjs/common";
@@ -13,7 +12,7 @@ type AuthenticatedRequest = Request & { user?: AuthenticatedUser };
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-	constructor(@Inject(JwtService) private readonly jwtService: JwtService) {}
+	constructor(private readonly jwtService: JwtService) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
 		const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
