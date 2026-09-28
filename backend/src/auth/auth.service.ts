@@ -33,19 +33,38 @@ export class AuthService {
 			throw new ConflictException("Email is already registered");
 		}
 
-		const [user] = await this.db
-			.insert(users)
-			.values({
-				email,
-				passwordHash: await hash(dto.password, 12),
-				fullName: dto.fullName,
-			})
-			.returning({ id: users.id, email: users.email });
+		const user = await this.db.transaction(async (tx) => {
+			const [createdUser] = await tx
+				.insert(users)
+				.values({
+					email,
+					passwordHash: await hash(dto.password, 12),
+					fullName: dto.fullName,
+				})
+				.returning({ id: users.id, email: users.email });
+
+			const [userRole] = await tx
+				.select({ id: roles.id })
+				.from(roles)
+				.where(eq(roles.name, "user"))
+				.limit(1);
+
+			if (!userRole) {
+				throw new Error('Default role "user" was not found');
+			}
+
+			await tx.insert(usersToRoles).values({
+				userId: createdUser.id,
+				roleId: userRole.id,
+			});
+
+			return createdUser;
+		});
 
 		return this.tokenService.issueTokens({
 			id: user.id,
 			email: user.email,
-			roles: [],
+			roles: ["user"],
 		});
 	}
 
