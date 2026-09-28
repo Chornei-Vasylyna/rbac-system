@@ -20,6 +20,7 @@
 		"db:logs": "docker compose logs -f",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
+		"db:seed": "pnpm build && node dist/db/seed.js",
 		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
