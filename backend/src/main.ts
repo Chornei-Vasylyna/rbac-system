@@ -11,6 +11,10 @@ async function bootstrap() {
 	const configService = app.get(ConfigService);
 
 	app.use(cookieParser());
+	app.enableCors({
+		origin: configService.get<string>("FRONTEND_URL") ?? "http://localhost:5173",
+		credentials: true,
+	});
 
 	app.setGlobalPrefix("api");
 

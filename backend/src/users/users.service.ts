@@ -16,6 +16,7 @@ import {
 import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { ListUsersDto } from "./dto/list-users.dto.js";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto.js";
+import { UpdateUserDto } from "./dto/update-user.dto.js";
 
 @Injectable()
 export class UsersService {
@@ -96,6 +97,34 @@ export class UsersService {
 
 		if (!assignment) throw new ConflictException("Role is already assigned");
 		return { userId, role };
+	}
+
+	async update(userId: string, dto: UpdateUserDto) {
+		try {
+			const [user] = await this.db
+				.update(users)
+				.set({
+					email: dto.email.toLowerCase(),
+					fullName: dto.fullName?.trim() || null,
+					updatedAt: new Date(),
+				})
+				.where(eq(users.id, userId))
+				.returning({
+					id: users.id,
+					email: users.email,
+					fullName: users.fullName,
+					isActive: users.isActive,
+					updatedAt: users.updatedAt,
+				});
+
+			if (!user) throw new NotFoundException("User not found");
+			return user;
+		} catch (error) {
+			if (error instanceof Error && error.message.includes("users_email_unique")) {
+				throw new ConflictException("Email is already in use");
+			}
+			throw error;
+		}
 	}
 
 	async removeRole(userId: string, roleId: string) {

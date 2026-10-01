@@ -15,6 +15,7 @@ export const apiEndpoints = {
 	},
 	users: {
 		list: "/users",
+		update: (userId: string) => `/users/${userId}`,
 		assignRole: (userId: string) => `/users/${userId}/roles`,
 		removeRole: (userId: string, roleId: string) =>
 			`/users/${userId}/roles/${roleId}`,

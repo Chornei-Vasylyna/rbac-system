@@ -3,10 +3,11 @@ import { rolesKeys } from "./roles.keys.ts";
 import { rolesService } from "./roles.service.ts";
 import type { Permission, Role } from "./roles.types.ts";
 
-export const useRolesQuery = () =>
+export const useRolesQuery = (enabled = true) =>
 	useQuery<Role[], Error>({
 		queryKey: rolesKeys.list,
 		queryFn: rolesService.list,
+		enabled,
 	});
 
 export const usePermissionsQuery = () =>

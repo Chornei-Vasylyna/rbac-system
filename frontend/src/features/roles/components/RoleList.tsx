@@ -5,14 +5,25 @@ import { toast } from "sonner";
 import { usePermissionsQuery, useRolesQuery } from "../api/roles.queries.ts";
 import { rolesKeys } from "../api/roles.keys.ts";
 import { rolesService } from "../api/roles.service.ts";
+import { EditRoleForm } from "./EditRoleForm.tsx";
 
 export const RoleList = () => {
 	const { data, isLoading, error } = useRolesQuery();
 	const permissionsQuery = usePermissionsQuery();
 	const queryClient = useQueryClient();
 	const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+	const [editingDetailsRoleId, setEditingDetailsRoleId] = useState<string | null>(null);
 	const { register, handleSubmit, reset } = useForm<{ permissionIds: string[] }>({
 		defaultValues: { permissionIds: [] },
+	});
+	const updateRoleMutation = useMutation({
+		mutationFn: ({ roleId, name, description }: { roleId: string; name: string; description: string }) =>
+			rolesService.update(roleId, name, description),
+		onError: (mutationError) => toast.error(mutationError.message),
+		onSuccess: () => {
+			setEditingDetailsRoleId(null);
+			void queryClient.invalidateQueries({ queryKey: rolesKeys.list });
+		},
 	});
 	const updateMutation = useMutation({
 		mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
@@ -59,6 +70,12 @@ export const RoleList = () => {
 							Edit permissions
 						</button>
 						<button
+							onClick={() => setEditingDetailsRoleId(role.id)}
+							type="button"
+						>
+							Edit role
+						</button>
+						<button
 							disabled={removeMutation.isPending}
 							onClick={() => {
 								if (window.confirm(`Delete role ${role.name}?`)) {
@@ -85,6 +102,16 @@ export const RoleList = () => {
 									{updateMutation.isPending ? "Saving..." : "Save permissions"}
 								</button>
 							</form>
+						)}
+						{editingDetailsRoleId === role.id && (
+							<EditRoleForm
+								isPending={updateRoleMutation.isPending}
+								onCancel={() => setEditingDetailsRoleId(null)}
+								onSubmit={({ name, description }) =>
+									updateRoleMutation.mutate({ roleId: role.id, name, description })
+								}
+								role={role}
+							/>
 						)}
 					</div>
 				))}

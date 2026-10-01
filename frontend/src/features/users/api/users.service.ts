@@ -8,6 +8,12 @@ export const usersService = {
 		});
 		return data;
 	},
+	update: async (userId: string, email: string, fullName: string) => {
+		await baseApi.patch(apiEndpoints.users.update(userId), {
+			email,
+			fullName: fullName || null,
+		});
+	},
 	assignRole: async (userId: string, roleId: string) => {
 		await baseApi.post(apiEndpoints.users.assignRole(userId), { roleId });
 	},

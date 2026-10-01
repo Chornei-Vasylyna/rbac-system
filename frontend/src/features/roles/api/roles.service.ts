@@ -26,6 +26,13 @@ export const rolesService = {
 		});
 		return data;
 	},
+	update: async (roleId: string, name: string, description: string) => {
+		const { data } = await baseApi.patch<Role>(apiEndpoints.roles.update(roleId), {
+			name,
+			description: description || undefined,
+		});
+		return data;
+	},
 	remove: async (roleId: string) => {
 		await baseApi.delete(apiEndpoints.roles.remove(roleId));
 	},

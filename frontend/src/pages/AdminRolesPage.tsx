@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { RoleList } from "../features/roles/components/RoleList.tsx";
 import { rolesKeys } from "../features/roles/api/roles.keys.ts";
 import { rolesService } from "../features/roles/api/roles.service.ts";
+import { PermissionDirectory } from "../features/roles/components/PermissionDirectory.tsx";
 
 export const AdminRolesPage = () => {
 	const queryClient = useQueryClient();
@@ -34,6 +35,7 @@ export const AdminRolesPage = () => {
 				</button>
 			</form>
 			<RoleList />
+			<PermissionDirectory />
 		</section>
 	);
 };

@@ -15,6 +15,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { PermissionsGuard } from "../auth/guards/permissions.guard.js";
 import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { ListUsersDto } from "./dto/list-users.dto.js";
+import { UpdateUserDto } from "./dto/update-user.dto.js";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto.js";
 import { UsersService } from "./users.service.js";
 
@@ -27,6 +28,15 @@ export class UsersController {
 	@Permissions("users:read")
 	findAll(@Query() query: ListUsersDto) {
 		return this.usersService.findAll(query);
+	}
+
+	@Patch(":id")
+	@Permissions("users:manage")
+	update(
+		@Param("id", new ParseUUIDPipe()) userId: string,
+		@Body() dto: UpdateUserDto,
+	) {
+		return this.usersService.update(userId, dto);
 	}
 
 	@Post(":id/roles")
