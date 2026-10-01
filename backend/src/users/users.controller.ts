@@ -8,11 +8,8 @@ import {
 	Patch,
 	Post,
 	Query,
-	Req,
 	UseGuards,
 } from "@nestjs/common";
-import type { Request } from "express";
-import type { AuthenticatedUser } from "../auth/auth.types.js";
 import { Roles } from "../auth/decorators/roles.decorator.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { RolesGuard } from "../auth/guards/roles.guard.js";
@@ -20,8 +17,6 @@ import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { ListUsersDto } from "./dto/list-users.dto.js";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto.js";
 import { UsersService } from "./users.service.js";
-
-type AuthenticatedRequest = Request & { user: AuthenticatedUser };
 
 @Controller("users")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -56,16 +51,5 @@ export class UsersController {
 		@Body() dto: UpdateUserStatusDto,
 	) {
 		return this.usersService.updateStatus(userId, dto);
-	}
-
-	@Get("me")
-	@Roles()
-	getCurrentUser(@Req() request: AuthenticatedRequest) {
-		return request.user;
-	}
-
-	@Get("admin-check")
-	adminCheck() {
-		return { authorized: true };
 	}
 }

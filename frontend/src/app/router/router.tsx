@@ -1,0 +1,34 @@
+import { createBrowserRouter } from "react-router-dom";
+import { AdminRoute, ProtectedRoute } from "./guards.tsx";
+import { AppLayout } from "../layout/AppLayout.tsx";
+import { DashboardPage } from "../../pages/DashboardPage.tsx";
+import { ForbiddenPage } from "../../pages/ForbiddenPage.tsx";
+import { LoginPage } from "../../pages/LoginPage.tsx";
+import { RegisterPage } from "../../pages/RegisterPage.tsx";
+import { AdminRolesPage } from "../../pages/AdminRolesPage.tsx";
+import { AdminUsersPage } from "../../pages/AdminUsersPage.tsx";
+
+export const router = createBrowserRouter([
+	{
+		path: "/",
+		element: <ProtectedRoute />,
+		children: [
+			{
+				element: <AppLayout />,
+				children: [
+					{ index: true, element: <DashboardPage /> },
+					{
+						element: <AdminRoute />,
+						children: [
+							{ path: "admin/users", element: <AdminUsersPage /> },
+							{ path: "admin/roles", element: <AdminRolesPage /> },
+						],
+					},
+				],
+			},
+		],
+	},
+	{ path: "/login", element: <LoginPage /> },
+	{ path: "/register", element: <RegisterPage /> },
+	{ path: "/403", element: <ForbiddenPage /> },
+]);

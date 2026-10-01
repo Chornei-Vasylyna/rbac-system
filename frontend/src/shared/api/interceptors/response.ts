@@ -1,12 +1,14 @@
 import type {
 	AxiosError,
 	AxiosInstance,
+	AxiosRequestConfig,
 	InternalAxiosRequestConfig,
 } from "axios";
 import type {
 	AuthInterceptorCallbacks,
 	AuthRefreshResponse,
-} from "../types.ts";
+} from "../../types/index.ts";
+import { apiEndpoints } from "../endpoints.ts";
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
 	_retry?: boolean;
@@ -16,7 +18,7 @@ export const createResponseInterceptor = (
 	api: AxiosInstance,
 	{ setAccessToken, onAuthFailed }: AuthInterceptorCallbacks,
 ) => async (error: AxiosError<unknown>) => {
-	const originalRequest = error.config as RetryableRequestConfig | undefined;
+	const originalRequest: RetryableRequestConfig | undefined = error.config;
 
 	if (
 		error.response?.status !== 401 ||
@@ -29,9 +31,11 @@ export const createResponseInterceptor = (
 	originalRequest._retry = true;
 
 	try {
-		const refreshConfig = { _retry: true } as RetryableRequestConfig;
+		const refreshConfig: AxiosRequestConfig & { _retry: boolean } = {
+			_retry: true,
+		};
 		const { data } = await api.post<AuthRefreshResponse>(
-			"/auth/refresh",
+			apiEndpoints.auth.refresh,
 			undefined,
 			refreshConfig,
 		);

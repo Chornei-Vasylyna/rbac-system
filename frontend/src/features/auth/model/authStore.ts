@@ -1,17 +1,6 @@
 import { create } from "zustand";
-import type { AxiosRequestConfig } from "axios";
-import { baseApi } from "../../../shared/api/client.ts";
-
-export type AuthUser = {
-	id: string;
-	email: string;
-	roles: string[];
-};
-
-type AuthRefreshResponse = {
-	accessToken: string;
-	user: AuthUser;
-};
+import { authService } from "../api/auth.service.ts";
+import type { AuthUser } from "../api/auth.types.ts";
 
 type AuthState = {
 	user: AuthUser | null;
@@ -22,6 +11,7 @@ type AuthState = {
 	clearAuth: () => void;
 	setAccessToken: (token: string) => void;
 	checkAuth: () => Promise<void>;
+	logout: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,14 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 	setAccessToken: (accessToken) => set({ accessToken }),
 	checkAuth: async () => {
 		try {
-			const refreshConfig = { _retry: true } as AxiosRequestConfig & {
-				_retry: boolean;
-			};
-			const { data } = await baseApi.post<AuthRefreshResponse>(
-				"/auth/refresh",
-				undefined,
-				refreshConfig,
-			);
+			const data = await authService.refresh();
 			set({
 				user: data.user,
 				accessToken: data.accessToken,
@@ -53,6 +36,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 			set({ user: null, accessToken: null, isAuthenticated: false });
 		} finally {
 			set({ isInitialized: true });
+		}
+	},
+	logout: async () => {
+		try {
+			await authService.logout();
+		} finally {
+			set({ user: null, accessToken: null, isAuthenticated: false });
 		}
 	},
 }));
