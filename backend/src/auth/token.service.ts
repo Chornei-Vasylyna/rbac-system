@@ -8,8 +8,10 @@ import ms from "ms";
 import type { Database } from "../db/drizzle.provider.js";
 import { DRIZZLE } from "../db/drizzle.provider.js";
 import {
+	permissions,
 	refreshTokens,
 	roles,
+	rolesToPermissions,
 	users,
 	usersToRoles,
 } from "../db/schema/index.js";
@@ -27,11 +29,19 @@ export class TokenService {
 		private readonly configService: ConfigService,
 	) {}
 
-	async issueTokens(user: AuthenticatedUser) {
+	async issueTokens(
+		user: Omit<AuthenticatedUser, "permissions"> & {
+			permissions?: string[];
+		},
+	) {
+		const authenticatedUser: AuthenticatedUser = {
+			...user,
+			permissions: user.permissions ?? (await this.getUserPermissions(user.id)),
+		};
 		const payload: JwtPayload = {
-			sub: user.id,
-			email: user.email,
-			roles: user.roles,
+			sub: authenticatedUser.id,
+			email: authenticatedUser.email,
+			roles: authenticatedUser.roles,
 			type: "access",
 		};
 
@@ -56,7 +66,7 @@ export class TokenService {
 
 		await this.db.insert(refreshTokens).values({
 			id: refreshTokenId,
-			userId: user.id,
+			userId: authenticatedUser.id,
 			tokenHash: await hash(refreshToken, 12),
 			expiresAt: new Date(Date.now() + refreshExpiresInMs),
 		});
@@ -68,7 +78,7 @@ export class TokenService {
 			accessToken,
 			refreshToken,
 			expiresIn,
-			user,
+			user: authenticatedUser,
 		};
 	}
 
@@ -164,5 +174,22 @@ export class TokenService {
 			.where(eq(usersToRoles.userId, userId));
 
 		return userRoles.map((role) => role.name);
+	}
+
+	private async getUserPermissions(userId: string) {
+		const userPermissions = await this.db
+			.select({ slug: permissions.slug })
+			.from(usersToRoles)
+			.innerJoin(
+				rolesToPermissions,
+				eq(rolesToPermissions.roleId, usersToRoles.roleId),
+			)
+			.innerJoin(
+				permissions,
+				eq(permissions.id, rolesToPermissions.permissionId),
+			)
+			.where(eq(usersToRoles.userId, userId));
+
+		return [...new Set(userPermissions.map((permission) => permission.slug))];
 	}
 }

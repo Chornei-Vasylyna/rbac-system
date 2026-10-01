@@ -5,7 +5,8 @@ import { useAuthStore } from "../../features/auth/model/authStore.ts";
 export const AppLayout = () => {
 	const navigate = useNavigate();
 	const { user, logout } = useAuthStore();
-	const isAdmin = user?.roles.includes("admin") ?? false;
+	const canReadUsers = user?.permissions.includes("users:read") ?? false;
+	const canManageRoles = user?.permissions.includes("roles:manage") ?? false;
 
 	const handleLogout = async () => {
 		try {
@@ -24,8 +25,8 @@ export const AppLayout = () => {
 				</Link>
 				<nav aria-label="Main navigation">
 					<NavLink to="/" end>Overview</NavLink>
-					{isAdmin && <NavLink to="/admin/users">Users</NavLink>}
-					{isAdmin && <NavLink to="/admin/roles">Roles</NavLink>}
+					{canReadUsers && <NavLink to="/admin/users">Users</NavLink>}
+					{canManageRoles && <NavLink to="/admin/roles">Roles</NavLink>}
 				</nav>
 				<div>
 					<div>

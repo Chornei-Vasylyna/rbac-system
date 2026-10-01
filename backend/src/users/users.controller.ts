@@ -10,26 +10,27 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { Roles } from "../auth/decorators/roles.decorator.js";
+import { Permissions } from "../auth/decorators/permissions.decorator.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
-import { RolesGuard } from "../auth/guards/roles.guard.js";
+import { PermissionsGuard } from "../auth/guards/permissions.guard.js";
 import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { ListUsersDto } from "./dto/list-users.dto.js";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto.js";
 import { UsersService } from "./users.service.js";
 
 @Controller("users")
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("admin")
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
 	@Get()
+	@Permissions("users:read")
 	findAll(@Query() query: ListUsersDto) {
 		return this.usersService.findAll(query);
 	}
 
 	@Post(":id/roles")
+	@Permissions("users:manage")
 	assignRole(
 		@Param("id", new ParseUUIDPipe()) userId: string,
 		@Body() dto: AssignRoleDto,
@@ -38,6 +39,7 @@ export class UsersController {
 	}
 
 	@Delete(":id/roles/:roleId")
+	@Permissions("users:manage")
 	removeRole(
 		@Param("id", new ParseUUIDPipe()) userId: string,
 		@Param("roleId", new ParseUUIDPipe()) roleId: string,
@@ -46,6 +48,7 @@ export class UsersController {
 	}
 
 	@Patch(":id/status")
+	@Permissions("users:manage")
 	updateStatus(
 		@Param("id", new ParseUUIDPipe()) userId: string,
 		@Body() dto: UpdateUserStatusDto,

@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import { AdminRoute, ProtectedRoute } from "./guards.tsx";
+import { PermissionRoute, ProtectedRoute } from "./guards.tsx";
 import { AppLayout } from "../layout/AppLayout.tsx";
 import { DashboardPage } from "../../pages/DashboardPage.tsx";
 import { ForbiddenPage } from "../../pages/ForbiddenPage.tsx";
@@ -18,11 +18,12 @@ export const router = createBrowserRouter([
 				children: [
 					{ index: true, element: <DashboardPage /> },
 					{
-						element: <AdminRoute />,
-						children: [
-							{ path: "admin/users", element: <AdminUsersPage /> },
-							{ path: "admin/roles", element: <AdminRolesPage /> },
-						],
+						element: <PermissionRoute permission="users:read" />,
+						children: [{ path: "admin/users", element: <AdminUsersPage /> }],
+					},
+					{
+						element: <PermissionRoute permission="roles:manage" />,
+						children: [{ path: "admin/roles", element: <AdminRolesPage /> }],
 					},
 				],
 			},

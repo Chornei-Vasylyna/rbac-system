@@ -19,8 +19,21 @@ export const ProtectedRoute = () => {
 export const AdminRoute = () => {
 	const { user } = useAuthStore();
 
-	if (!user?.roles.includes("admin")) {
+	if (
+		!user?.permissions.includes("users:read") &&
+		!user?.permissions.includes("roles:manage")
+	) {
 		return <Navigate to="/" replace />;
+	}
+
+	return <Outlet />;
+};
+
+export const PermissionRoute = ({ permission }: { permission: string }) => {
+	const user = useAuthStore((state) => state.user);
+
+	if (!user?.permissions.includes(permission)) {
+		return <Navigate to="/403" replace />;
 	}
 
 	return <Outlet />;

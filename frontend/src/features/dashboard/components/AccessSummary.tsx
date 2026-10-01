@@ -6,13 +6,13 @@ type AccessSummaryProps = {
 };
 
 export const AccessSummary = ({ user }: AccessSummaryProps) => {
-	const isAdmin = user.roles.includes("admin");
+	const canManageUsers = user.permissions.includes("users:read");
 
 	return (
 		<div>
 			<article><span>Account</span><strong>Active</strong><span>Ready for protected resources</span></article>
 			<article><span>Roles</span><strong>{user.roles.length}</strong><span>{user.roles.join(", ")}</span></article>
-			{isAdmin && <article><span>Administration</span><strong>Enabled</strong><Link to="/admin/users">Open admin tools</Link></article>}
+			{canManageUsers && <article><span>Administration</span><strong>Enabled</strong><Link to="/admin/users">Open admin tools</Link></article>}
 		</div>
 	);
 };

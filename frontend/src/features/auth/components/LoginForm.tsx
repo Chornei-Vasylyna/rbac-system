@@ -24,7 +24,8 @@ export const LoginForm = () => {
 		try {
 			const data = await loginMutation.mutateAsync({ email, password });
 			setAuth(data.user, data.accessToken);
-			const destination = data.user.roles.includes("admin")
+			const destination = data.user.permissions.includes("users:read") ||
+				data.user.permissions.includes("roles:manage")
 				? "/admin/users"
 				: "/";
 			navigate(destination, { replace: true });

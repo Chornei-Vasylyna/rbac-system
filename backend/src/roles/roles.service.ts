@@ -4,7 +4,7 @@ import {
 	Injectable,
 	NotFoundException,
 } from "@nestjs/common";
-import { eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import type { Database } from "../db/drizzle.provider.js";
 import { DRIZZLE } from "../db/drizzle.provider.js";
 import {
@@ -18,6 +18,10 @@ import { UpdateRolePermissionsDto } from "./dto/update-role-permissions.dto.js";
 @Injectable()
 export class RolesService {
 	constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+	findPermissions() {
+		return this.db.select().from(permissions).orderBy(asc(permissions.slug));
+	}
 
 	async findAll() {
 		const rows = await this.db

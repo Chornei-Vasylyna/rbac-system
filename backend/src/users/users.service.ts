@@ -7,7 +7,12 @@ import {
 import { and, asc, count, eq, ilike, inArray } from "drizzle-orm";
 import type { Database } from "../db/drizzle.provider.js";
 import { DRIZZLE } from "../db/drizzle.provider.js";
-import { roles, users, usersToRoles } from "../db/schema/index.js";
+import {
+	refreshTokens,
+	roles,
+	users,
+	usersToRoles,
+} from "../db/schema/index.js";
 import { AssignRoleDto } from "./dto/assign-role.dto.js";
 import { ListUsersDto } from "./dto/list-users.dto.js";
 import { UpdateUserStatusDto } from "./dto/update-user-status.dto.js";
@@ -109,16 +114,24 @@ export class UsersService {
 	}
 
 	async updateStatus(userId: string, dto: UpdateUserStatusDto) {
-		const [user] = await this.db
-			.update(users)
-			.set({ isActive: dto.isActive, updatedAt: new Date() })
-			.where(eq(users.id, userId))
-			.returning({
-				id: users.id,
-				email: users.email,
-				isActive: users.isActive,
-				updatedAt: users.updatedAt,
-			});
+		const user = await this.db.transaction(async (tx) => {
+			const [updatedUser] = await tx
+				.update(users)
+				.set({ isActive: dto.isActive, updatedAt: new Date() })
+				.where(eq(users.id, userId))
+				.returning({
+					id: users.id,
+					email: users.email,
+					isActive: users.isActive,
+					updatedAt: users.updatedAt,
+				});
+
+			if (updatedUser && !updatedUser.isActive) {
+				await tx.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
+			}
+
+			return updatedUser;
+		});
 
 		if (!user) throw new NotFoundException("User not found");
 		return user;
