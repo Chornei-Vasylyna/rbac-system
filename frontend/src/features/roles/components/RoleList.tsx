@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { usePermissionsQuery, useRolesQuery } from "../api/roles.queries.ts";
 import { rolesKeys } from "../api/roles.keys.ts";
 import { rolesService } from "../api/roles.service.ts";
@@ -16,6 +17,7 @@ export const RoleList = () => {
 	const updateMutation = useMutation({
 		mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
 			rolesService.updatePermissions(roleId, permissionIds),
+		onError: (mutationError) => toast.error(mutationError.message),
 		onSuccess: () => {
 				setEditingRoleId(null);
 				void queryClient.invalidateQueries({ queryKey: rolesKeys.list });
@@ -23,6 +25,7 @@ export const RoleList = () => {
 	});
 	const removeMutation = useMutation({
 		mutationFn: rolesService.remove,
+		onError: (mutationError) => toast.error(mutationError.message),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: rolesKeys.list });
 		},

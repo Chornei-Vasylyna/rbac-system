@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { RoleList } from "../features/roles/components/RoleList.tsx";
 import { rolesKeys } from "../features/roles/api/roles.keys.ts";
 import { rolesService } from "../features/roles/api/roles.service.ts";
@@ -13,6 +14,7 @@ export const AdminRolesPage = () => {
 	const createMutation = useMutation({
 		mutationFn: ({ name, description }: { name: string; description: string }) =>
 			rolesService.create(name, description),
+		onError: (mutationError) => toast.error(mutationError.message),
 		onSuccess: () => {
 			reset();
 			void queryClient.invalidateQueries({ queryKey: rolesKeys.list });

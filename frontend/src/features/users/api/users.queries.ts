@@ -3,8 +3,8 @@ import { usersKeys } from "./users.keys.ts";
 import { usersService } from "./users.service.ts";
 import type { UsersResponse } from "./users.types.ts";
 
-export const useUsersQuery = () =>
+export const useUsersQuery = (page: number, search: string) =>
 	useQuery<UsersResponse, Error>({
-		queryKey: usersKeys.list,
-		queryFn: usersService.list,
+		queryKey: usersKeys.list(page, search),
+		queryFn: () => usersService.list(page, search),
 	});
