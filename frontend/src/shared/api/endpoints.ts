@@ -10,6 +10,8 @@ export const apiEndpoints = {
 		permissionsList: "/roles/permissions",
 		create: "/roles",
 		permissions: (roleId: string) => `/roles/${roleId}/permissions`,
+		update: (roleId: string) => `/roles/${roleId}`,
+		remove: (roleId: string) => `/roles/${roleId}`,
 	},
 	users: {
 		list: "/users",

@@ -11,8 +11,10 @@ import {
 	permissions,
 	roles,
 	rolesToPermissions,
+	usersToRoles,
 } from "../db/schema/index.js";
 import { CreateRoleDto } from "./dto/create-role.dto.js";
+import { UpdateRoleDto } from "./dto/update-role.dto.js";
 import { UpdateRolePermissionsDto } from "./dto/update-role-permissions.dto.js";
 
 @Injectable()
@@ -66,7 +68,10 @@ export class RolesService {
 	async create(dto: CreateRoleDto) {
 		const [role] = await this.db
 			.insert(roles)
-			.values({ name: dto.name.trim() })
+			.values({
+				name: dto.name.trim(),
+				description: dto.description?.trim() || null,
+			})
 			.onConflictDoNothing({ target: roles.name })
 			.returning();
 
@@ -75,6 +80,63 @@ export class RolesService {
 		}
 
 		return role;
+	}
+
+	async update(roleId: string, dto: UpdateRoleDto) {
+		const [existingRole] = await this.db
+			.select({ id: roles.id, name: roles.name })
+			.from(roles)
+			.where(eq(roles.id, roleId))
+			.limit(1);
+
+		if (!existingRole) throw new NotFoundException("Role not found");
+		if (dto.name && ["admin", "user"].includes(existingRole.name)) {
+			throw new ConflictException("System roles cannot be renamed");
+		}
+
+		try {
+			const [role] = await this.db
+				.update(roles)
+				.set({
+					...(dto.name === undefined ? {} : { name: dto.name.trim() }),
+					...(dto.description === undefined
+						? {}
+						: { description: dto.description.trim() || null }),
+				})
+				.where(eq(roles.id, roleId))
+				.returning();
+			return role;
+		} catch (error) {
+			if (error instanceof Error && error.message.includes("roles_name_unique")) {
+				throw new ConflictException("Role name is already in use");
+			}
+			throw error;
+		}
+	}
+
+	async remove(roleId: string) {
+		const [role] = await this.db
+			.select({ id: roles.id, name: roles.name })
+			.from(roles)
+			.where(eq(roles.id, roleId))
+			.limit(1);
+
+		if (!role) throw new NotFoundException("Role not found");
+		if (["admin", "user"].includes(role.name)) {
+			throw new ConflictException("System roles cannot be deleted");
+		}
+
+		const [assignment] = await this.db
+			.select({ userId: usersToRoles.userId })
+			.from(usersToRoles)
+			.where(eq(usersToRoles.roleId, roleId))
+			.limit(1);
+		if (assignment) {
+			throw new ConflictException("Role is assigned to users");
+		}
+
+		await this.db.delete(roles).where(eq(roles.id, roleId));
+		return { id: roleId, removed: true };
 	}
 
 	async updatePermissions(roleId: string, dto: UpdateRolePermissionsDto) {

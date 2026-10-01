@@ -19,4 +19,14 @@ export const rolesService = {
 		);
 		return data;
 	},
+	create: async (name: string, description: string) => {
+		const { data } = await baseApi.post<Role>(apiEndpoints.roles.create, {
+			name,
+			description: description || undefined,
+		});
+		return data;
+	},
+	remove: async (roleId: string) => {
+		await baseApi.delete(apiEndpoints.roles.remove(roleId));
+	},
 };

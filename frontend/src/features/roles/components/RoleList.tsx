@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { usePermissionsQuery, useRolesQuery } from "../api/roles.queries.ts";
 import { rolesKeys } from "../api/roles.keys.ts";
 import { rolesService } from "../api/roles.service.ts";
@@ -9,7 +10,9 @@ export const RoleList = () => {
 	const permissionsQuery = usePermissionsQuery();
 	const queryClient = useQueryClient();
 	const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
-	const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
+	const { register, handleSubmit, reset } = useForm<{ permissionIds: string[] }>({
+		defaultValues: { permissionIds: [] },
+	});
 	const updateMutation = useMutation({
 		mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
 			rolesService.updatePermissions(roleId, permissionIds),
@@ -17,6 +20,12 @@ export const RoleList = () => {
 				setEditingRoleId(null);
 				void queryClient.invalidateQueries({ queryKey: rolesKeys.list });
 			},
+	});
+	const removeMutation = useMutation({
+		mutationFn: rolesService.remove,
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: rolesKeys.list });
+		},
 	});
 
 	return (
@@ -39,30 +48,32 @@ export const RoleList = () => {
 							type="button"
 							onClick={() => {
 								setEditingRoleId(role.id);
-								setSelectedPermissionIds(role.permissions.map((permission) => permission.id));
+								reset({
+									permissionIds: role.permissions.map((permission) => permission.id),
+								});
 							}}
 						>
 							Edit permissions
 						</button>
+						<button
+							disabled={removeMutation.isPending}
+							onClick={() => {
+								if (window.confirm(`Delete role ${role.name}?`)) {
+									removeMutation.mutate(role.id);
+								}
+							}}
+							type="button"
+						>
+							Delete role
+						</button>
 						{editingRoleId === role.id && (
-							<form
-								onSubmit={(event) => {
-									event.preventDefault();
-									updateMutation.mutate({ roleId: role.id, permissionIds: selectedPermissionIds });
-								}}
-							>
+							<form onSubmit={handleSubmit(({ permissionIds }) => updateMutation.mutate({ roleId: role.id, permissionIds }))}>
 								{permissionsQuery.data?.map((permission) => (
 									<label key={permission.id}>
 										<input
 											type="checkbox"
-											checked={selectedPermissionIds.includes(permission.id)}
-											onChange={(event) => {
-												setSelectedPermissionIds((current) =>
-													event.target.checked
-														? [...current, permission.id]
-														: current.filter((id) => id !== permission.id),
-											);
-											}}
+											value={permission.id}
+											{...register("permissionIds")}
 										/>
 										{permission.slug}
 									</label>
