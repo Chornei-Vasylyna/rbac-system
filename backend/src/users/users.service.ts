@@ -31,7 +31,6 @@ export class UsersService {
 				.select({
 					id: users.id,
 					email: users.email,
-					fullName: users.fullName,
 					isActive: users.isActive,
 					createdAt: users.createdAt,
 					updatedAt: users.updatedAt,
@@ -41,10 +40,12 @@ export class UsersService {
 				.orderBy(asc(users.createdAt), asc(users.id))
 				.limit(pageSize)
 				.offset(offset),
+
 			this.db.select({ total: count() }).from(users).where(filter),
 		]);
 
 		const userIds = userRows.map((user) => user.id);
+
 		const roleRows = userIds.length
 			? await this.db
 					.select({ userId: usersToRoles.userId, role: roles })
@@ -54,6 +55,7 @@ export class UsersService {
 			: [];
 
 		const rolesByUserId = new Map<string, typeof roles.$inferSelect[]>();
+		
 		for (const row of roleRows) {
 			const userRoles = rolesByUserId.get(row.userId) ?? [];
 			userRoles.push(row.role);
@@ -105,14 +107,12 @@ export class UsersService {
 				.update(users)
 				.set({
 					email: dto.email.toLowerCase(),
-					fullName: dto.fullName?.trim() || null,
 					updatedAt: new Date(),
 				})
 				.where(eq(users.id, userId))
 				.returning({
 					id: users.id,
 					email: users.email,
-					fullName: users.fullName,
 					isActive: users.isActive,
 					updatedAt: users.updatedAt,
 				});
@@ -128,22 +128,98 @@ export class UsersService {
 	}
 
 	async removeRole(userId: string, roleId: string) {
-		const [assignment] = await this.db
-			.delete(usersToRoles)
-			.where(
-				and(
-					eq(usersToRoles.userId, userId),
-					eq(usersToRoles.roleId, roleId),
-				),
-			)
-			.returning();
+		return this.db.transaction(async (tx) => {
+			const [role] = await tx
+				.select({ name: roles.name })
+				.from(roles)
+				.where(eq(roles.id, roleId))
+				.limit(1);
 
-		if (!assignment) throw new NotFoundException("Role assignment not found");
-		return { userId, roleId, removed: true };
+			if (role?.name === "admin") {
+				const [{ total: activeAdminCount }] = await tx
+					.select({ total: count() })
+					.from(usersToRoles)
+					.innerJoin(users, eq(usersToRoles.userId, users.id))
+					.innerJoin(roles, eq(usersToRoles.roleId, roles.id))
+					.where(
+						and(
+							eq(roles.name, "admin"),
+							eq(users.isActive, true),
+						),
+					);
+
+				const [targetUser] = await tx
+					.select({ isActive: users.isActive })
+					.from(usersToRoles)
+					.innerJoin(users, eq(usersToRoles.userId, users.id))
+					.where(
+						and(
+							eq(usersToRoles.userId, userId),
+							eq(usersToRoles.roleId, roleId),
+						),
+					)
+					.limit(1);
+
+				const removesOnlyActiveAdmin =
+					targetUser?.isActive && Number(activeAdminCount) <= 1;
+				const leavesNoActiveAdmins = Number(activeAdminCount) === 0;
+
+				if (removesOnlyActiveAdmin || leavesNoActiveAdmins) {
+					throw new ConflictException(
+						"At least one active admin is required",
+					);
+				}
+			}
+
+			const [assignment] = await tx
+				.delete(usersToRoles)
+				.where(
+					and(
+						eq(usersToRoles.userId, userId),
+						eq(usersToRoles.roleId, roleId),
+					),
+				)
+				.returning();
+
+			if (!assignment) throw new NotFoundException("Role assignment not found");
+			return { userId, roleId, removed: true };
+		});
 	}
 
 	async updateStatus(userId: string, dto: UpdateUserStatusDto) {
 		const user = await this.db.transaction(async (tx) => {
+			if (!dto.isActive) {
+				const [adminAssignment] = await tx
+					.select({ userId: usersToRoles.userId })
+					.from(usersToRoles)
+					.innerJoin(roles, eq(usersToRoles.roleId, roles.id))
+					.where(
+						and(
+							eq(usersToRoles.userId, userId),
+							eq(roles.name, "admin"),
+						),
+					)
+					.limit(1);
+
+				if (adminAssignment) {
+					const [{ total }] = await tx
+						.select({ total: count() })
+						.from(usersToRoles)
+						.innerJoin(users, eq(usersToRoles.userId, users.id))
+						.innerJoin(roles, eq(usersToRoles.roleId, roles.id))
+						.where(
+							and(
+								eq(roles.name, "admin"),
+								eq(users.isActive, true),
+							),
+						);
+
+					if (Number(total) <= 1) {
+						throw new ConflictException("The last active admin cannot be deactivated");
+					}
+				}
+			}
+
 			const [updatedUser] = await tx
 				.update(users)
 				.set({ isActive: dto.isActive, updatedAt: new Date() })

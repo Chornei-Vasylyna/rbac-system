@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
-import { QueryProvider } from "./QueryProvider.tsx";
-import { ToastProvider } from "./ToastProvider.tsx";
+import { QueryProvider } from "@/app/providers/QueryProvider.tsx";
+import { ToastProvider } from "@/app/providers/ToastProvider.tsx";
 
 export const AppProviders = ({ children }: PropsWithChildren) => (
 	<QueryProvider>

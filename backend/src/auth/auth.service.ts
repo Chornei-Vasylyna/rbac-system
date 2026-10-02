@@ -39,7 +39,6 @@ export class AuthService {
 				.values({
 					email,
 					passwordHash: await hash(dto.password, 12),
-					fullName: dto.fullName,
 				})
 				.returning({ id: users.id, email: users.email });
 

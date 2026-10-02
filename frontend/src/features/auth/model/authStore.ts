@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { authService } from "../api/auth.service.ts";
-import type { AuthUser } from "../api/auth.types.ts";
+import { authService } from "@/features/auth/api/auth.service.ts";
+import type { AuthUser } from "@/features/auth/api/auth.types.ts";
 
 type AuthState = {
 	user: AuthUser | null;
@@ -11,7 +11,6 @@ type AuthState = {
 	clearAuth: () => void;
 	setAccessToken: (token: string) => void;
 	checkAuth: () => Promise<void>;
-	logout: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,13 +35,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 			set({ user: null, accessToken: null, isAuthenticated: false });
 		} finally {
 			set({ isInitialized: true });
-		}
-	},
-	logout: async () => {
-		try {
-			await authService.logout();
-		} finally {
-			set({ user: null, accessToken: null, isAuthenticated: false });
 		}
 	},
 }));

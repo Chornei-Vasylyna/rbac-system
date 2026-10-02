@@ -1,9 +1,8 @@
-import type { Role } from "../../roles/api/roles.types.ts";
+import type { Role } from "@/features/roles/api/roles.types.ts";
 
 export type User = {
 	id: string;
 	email: string;
-	fullName: string | null;
 	isActive: boolean;
 	createdAt: string;
 	updatedAt: string;
@@ -18,4 +17,19 @@ export type UsersResponse = {
 		total: number;
 		totalPages: number;
 	};
+};
+
+export type UpdateUserDto = {
+	userId: string;
+	email: string;
+};
+
+export type UpdateUserStatusDto = {
+	userId: string;
+	isActive: boolean;
+};
+
+export type UserRoleDto = {
+	userId: string;
+	roleId: string;
 };

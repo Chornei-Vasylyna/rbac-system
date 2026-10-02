@@ -13,7 +13,7 @@ export class ListUsersDto {
 	@IsInt()
 	@Min(1)
 	@Max(100)
-	pageSize = 20;
+	pageSize = 6;
 
 	@IsOptional()
 	@IsString()

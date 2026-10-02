@@ -10,3 +10,17 @@ export type Role = {
 	description: string | null;
 	permissions: Permission[];
 };
+
+export type CreateRoleDto = {
+	name: string;
+	description: string;
+};
+
+export type UpdateRoleDto = CreateRoleDto & {
+	roleId: string;
+};
+
+export type UpdateRolePermissionsDto = {
+	roleId: string;
+	permissionIds: string[];
+};

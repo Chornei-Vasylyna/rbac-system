@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AuthShell } from "../features/auth/components/AuthShell.tsx";
+import { AuthShell } from "@/features/auth/components/AuthShell.tsx";
 
 export const ForbiddenPage = () => (
 	<AuthShell title="403 - Access denied">

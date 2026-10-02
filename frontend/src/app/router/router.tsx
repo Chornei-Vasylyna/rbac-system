@@ -1,12 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
-import { PermissionRoute, ProtectedRoute } from "./guards.tsx";
-import { AppLayout } from "../layout/AppLayout.tsx";
-import { DashboardPage } from "../../pages/DashboardPage.tsx";
-import { ForbiddenPage } from "../../pages/ForbiddenPage.tsx";
-import { LoginPage } from "../../pages/LoginPage.tsx";
-import { RegisterPage } from "../../pages/RegisterPage.tsx";
-import { AdminRolesPage } from "../../pages/AdminRolesPage.tsx";
-import { AdminUsersPage } from "../../pages/AdminUsersPage.tsx";
+import { AppLayout } from "@/app/layout/AppLayout.tsx";
+import { PermissionRoute, ProtectedRoute } from "@/app/router/guards.tsx";
+import { AdminRolesPage } from "@/pages/AdminRolesPage.tsx";
+import { AdminUsersPage } from "@/pages/AdminUsersPage.tsx";
+import { DashboardPage } from "@/pages/DashboardPage.tsx";
+import { ForbiddenPage } from "@/pages/ForbiddenPage.tsx";
+import { LoginPage } from "@/pages/LoginPage.tsx";
+import { RegisterPage } from "@/pages/RegisterPage.tsx";
 
 export const router = createBrowserRouter([
 	{

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { rolesKeys } from "./roles.keys.ts";
-import { rolesService } from "./roles.service.ts";
-import type { Permission, Role } from "./roles.types.ts";
+import { rolesKeys } from "@/features/roles/api/roles.keys.ts";
+import { rolesService } from "@/features/roles/api/roles.service.ts";
+import type { Permission, Role } from "@/features/roles/api/roles.types.ts";
 
 export const useRolesQuery = (enabled = true) =>
 	useQuery<Role[], Error>({
@@ -12,6 +12,6 @@ export const useRolesQuery = (enabled = true) =>
 
 export const usePermissionsQuery = () =>
 	useQuery<Permission[], Error>({
-		queryKey: [...rolesKeys.all, "permissions"],
+		queryKey: rolesKeys.permissions,
 		queryFn: rolesService.listPermissions,
 	});

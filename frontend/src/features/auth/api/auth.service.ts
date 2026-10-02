@@ -1,11 +1,11 @@
 import type { AxiosRequestConfig } from "axios";
-import { apiEndpoints, baseApi } from "../../../shared/api/index.ts";
 import type {
 	AuthRefreshResponse,
 	AuthResponse,
 	LoginCredentials,
 	RegisterCredentials,
-} from "./auth.types.ts";
+} from "@/features/auth/api/auth.types.ts";
+import { apiEndpoints, baseApi } from "@/shared/api/index.ts";
 
 export const authService = {
 	login: async (credentials: LoginCredentials): Promise<AuthResponse> => {

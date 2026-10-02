@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { hash } from "bcryptjs";
 import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -28,6 +29,7 @@ async function seed() {
 	const testUserEmail = (
 		process.env.TEST_USER_EMAIL ?? "test@example.com"
 	).toLowerCase();
+	const testUserPassword = process.env.TEST_USER_PASSWORD ?? "12345678";
 
 	await db.transaction(async (tx) => {
 		for (const role of roleDefinitions) {
@@ -75,15 +77,22 @@ async function seed() {
 			)
 			.onConflictDoNothing();
 
-		const [testUser] = await tx
+		let [testUser] = await tx
 			.select({ id: users.id })
 			.from(users)
 			.where(eq(users.email, testUserEmail))
 			.limit(1);
 		if (!testUser) {
-			throw new Error(
-				`Test user ${testUserEmail} was not found. Set TEST_USER_EMAIL to an existing user.`,
-			);
+			[testUser] = await tx
+				.insert(users)
+				.values({
+					email: testUserEmail,
+					passwordHash: await hash(testUserPassword, 12),
+				})
+				.returning({ id: users.id });
+		}
+		if (!testUser) {
+			throw new Error(`Failed to create test user ${testUserEmail}`);
 		}
 
 		await tx

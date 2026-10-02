@@ -1,4 +1,5 @@
 export const rolesKeys = {
-	all: ["roles"],
-	list: ["roles", "list"],
-};
+	all: ["roles"] as const,
+	list: ["roles", "list"] as const,
+	permissions: ["roles", "permissions"] as const,
+} as const;

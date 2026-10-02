@@ -1,5 +1,11 @@
-import { apiEndpoints, baseApi } from "../../../shared/api/index.ts";
-import type { Permission, Role } from "./roles.types.ts";
+import type {
+	CreateRoleDto,
+	Permission,
+	Role,
+	UpdateRoleDto,
+	UpdateRolePermissionsDto,
+} from "@/features/roles/api/roles.types.ts";
+import { apiEndpoints, baseApi } from "@/shared/api/index.ts";
 
 export const rolesService = {
 	list: async (): Promise<Role[]> => {
@@ -12,25 +18,35 @@ export const rolesService = {
 		);
 		return data;
 	},
-	updatePermissions: async (roleId: string, permissionIds: string[]) => {
+	updatePermissions: async ({
+		roleId,
+		permissionIds,
+	}: UpdateRolePermissionsDto): Promise<Role> => {
 		const { data } = await baseApi.post<Role>(
 			apiEndpoints.roles.permissions(roleId),
 			{ permissionIds },
 		);
 		return data;
 	},
-	create: async (name: string, description: string) => {
+	create: async ({ name, description }: CreateRoleDto): Promise<Role> => {
 		const { data } = await baseApi.post<Role>(apiEndpoints.roles.create, {
 			name,
 			description: description || undefined,
 		});
 		return data;
 	},
-	update: async (roleId: string, name: string, description: string) => {
-		const { data } = await baseApi.patch<Role>(apiEndpoints.roles.update(roleId), {
-			name,
-			description: description || undefined,
-		});
+	update: async ({
+		roleId,
+		name,
+		description,
+	}: UpdateRoleDto): Promise<Role> => {
+		const { data } = await baseApi.patch<Role>(
+			apiEndpoints.roles.update(roleId),
+			{
+				name,
+				description: description || undefined,
+			},
+		);
 		return data;
 	},
 	remove: async (roleId: string) => {

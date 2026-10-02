@@ -1,52 +1,82 @@
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { useRegisterMutation } from "../api/auth.mutations.ts";
+import { useAuthActions } from "@/features/auth/hooks/useAuthActions.ts";
 import {
-	registerSchema,
 	type RegisterFormValues,
-} from "../schemas/registerSchema.ts";
-import axios from "axios";
+	registerSchema,
+} from "@/features/auth/schemas/registerSchema.ts";
+import { Input } from "@/shared/components/ui/Input.tsx";
+import { Label } from "@/shared/components/ui/Label.tsx";
 
 export const RegisterForm = () => {
 	const navigate = useNavigate();
-	const registerMutation = useRegisterMutation();
-	const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
+	const { handleRegister, isRegistering } = useAuthActions();
+
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<RegisterFormValues>({
 		resolver: zodResolver(registerSchema),
 	});
 
 	const submit = async (form: RegisterFormValues) => {
-		try {
-			await registerMutation.mutateAsync(form);
-			toast.success("Account created. You can sign in now.");
+		if (await handleRegister(form)) {
 			navigate("/login", { replace: true });
-		} catch (error) {
-			const message = axios.isAxiosError(error) && typeof error.response?.data?.message === "string"
-				? error.response.data.message
-				: "Could not create the account.";
-			toast.error(message);
 		}
 	};
 
 	return (
 		<>
 			<form className="space-y-5" onSubmit={handleSubmit(submit)}>
-				<label className="block text-sm font-medium text-slate-300">Full name
-					<input className="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" {...register("fullName")} />
-				</label>
-				{errors.fullName && <span className="-mt-3 block text-sm text-rose-400" role="alert">{errors.fullName.message}</span>}
-				<label className="block text-sm font-medium text-slate-300">Email
-					<input className="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" type="email" {...register("email")} />
-				</label>
-				{errors.email && <span className="-mt-3 block text-sm text-rose-400" role="alert">{errors.email.message}</span>}
-				<label className="block text-sm font-medium text-slate-300">Password
-					<input className="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" type="password" {...register("password")} />
-				</label>
-				{errors.password && <span className="-mt-3 block text-sm text-rose-400" role="alert">{errors.password.message}</span>}
-				<button className="w-full rounded-lg bg-cyan-400 px-4 py-2.5 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60" disabled={registerMutation.isPending} type="submit">{registerMutation.isPending ? "Creating..." : "Create account"}</button>
+				<div>
+					<Label htmlFor="register-email">Email</Label>
+					<Input
+						className="mt-2"
+						id="register-email"
+						type="email"
+						placeholder="name@example.com"
+						{...register("email")}
+					/>
+				</div>
+				{errors.email && (
+					<span className="-mt-3 block text-sm text-rose-400" role="alert">
+						{errors.email.message}
+					</span>
+				)}
+				<div>
+					<Label htmlFor="register-password">Password</Label>
+					<Input
+						className="mt-2"
+						id="register-password"
+						type="password"
+						placeholder="••••••••"
+						{...register("password")}
+					/>
+				</div>
+				{errors.password && (
+					<span className="-mt-3 block text-sm text-rose-400" role="alert">
+						{errors.password.message}
+					</span>
+				)}
+				<button
+					className="w-full rounded-md bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+					disabled={isRegistering}
+					type="submit"
+				>
+					{isRegistering ? "Creating..." : "Create account"}
+				</button>
 			</form>
-			<p className="mt-6 text-center text-sm text-slate-400">Already registered? <Link className="font-medium text-cyan-400 hover:text-cyan-300" to="/login">Sign in</Link></p>
+			<p className="mt-6 text-center text-sm text-slate-500">
+				Already registered?{" "}
+				<Link
+					className="font-medium text-slate-900 hover:underline"
+					to="/login"
+				>
+					Sign in
+				</Link>
+			</p>
 		</>
 	);
 };

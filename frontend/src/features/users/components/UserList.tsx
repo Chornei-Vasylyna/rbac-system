@@ -1,134 +1,191 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useUsersQuery } from "../api/users.queries.ts";
-import { usersKeys } from "../api/users.keys.ts";
-import { usersService } from "../api/users.service.ts";
-import { useRolesQuery } from "../../roles/api/roles.queries.ts";
-import { useAuthStore } from "../../auth/model/authStore.ts";
-import { EditUserForm } from "./EditUserForm.tsx";
+import { useAuthStore } from "@/features/auth/model/authStore.ts";
+import { useRolesQuery } from "@/features/roles/api/roles.queries.ts";
+import { useUsersQuery } from "@/features/users/api/users.queries.ts";
+import { UserPagination } from "@/features/users/components/UserPagination.tsx";
+import { UserRoleRemoveDialog } from "@/features/users/components/UserRoleRemoveDialog.tsx";
+import { UserSearchHeader } from "@/features/users/components/UserSearchHeader.tsx";
+import { UserTableRow } from "@/features/users/components/UserTableRow.tsx";
+import { useUserActions } from "@/features/users/hooks/useUserActions.ts";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/shared/components/ui/Table";
 
 export const UserList = () => {
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState("");
 	const [editingUserId, setEditingUserId] = useState<string | null>(null);
-	const canManageUsers = useAuthStore((state) => state.user?.permissions.includes("users:manage") ?? false);
+	const [roleRemoval, setRoleRemoval] = useState<{
+		roleId: string;
+		roleName: string;
+		userEmail: string;
+		userId: string;
+	} | null>(null);
+
+	const canManageUsers = useAuthStore(
+		(state) => state.user?.permissions.includes("users:manage") ?? false,
+	);
 	const { data, isLoading, error } = useUsersQuery(page, search);
 	const rolesQuery = useRolesQuery(canManageUsers);
-	const queryClient = useQueryClient();
-	const updateMutation = useMutation({
-		mutationFn: ({ userId, email, fullName }: { userId: string; email: string; fullName: string }) =>
-			usersService.update(userId, email, fullName),
-		onSuccess: () => {
-			setEditingUserId(null);
-			void queryClient.invalidateQueries({ queryKey: usersKeys.all });
-		},
-		onError: (mutationError) => toast.error(mutationError.message),
-	});
-	const statusMutation = useMutation({
-		mutationFn: ({ userId, isActive }: { userId: string; isActive: boolean }) =>
-			usersService.updateStatus(userId, isActive),
-		onSuccess: () => {
-				void queryClient.invalidateQueries({ queryKey: usersKeys.all });
-			},
-		onError: (mutationError) => toast.error(mutationError.message),
-	});
-	const assignRoleMutation = useMutation({
-		mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
-			usersService.assignRole(userId, roleId),
-		onSuccess: () => {
-				void queryClient.invalidateQueries({ queryKey: usersKeys.all });
-			},
-		onError: (mutationError) => toast.error(mutationError.message),
-	});
-	const removeRoleMutation = useMutation({
-		mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) =>
-			usersService.removeRole(userId, roleId),
-		onSuccess: () => {
-				void queryClient.invalidateQueries({ queryKey: usersKeys.all });
-			},
-		onError: (mutationError) => toast.error(mutationError.message),
+
+	const {
+		handleAssignRole,
+		handleRemoveRole,
+		handleStatusChange,
+		handleUpdate,
+		isAssigningRole,
+		isRemovingRole,
+		isUpdating,
+		isUpdatingStatus,
+	} = useUserActions({
+		onUpdateSuccess: () => setEditingUserId(null),
 	});
 
+	const availableRoles = rolesQuery.data ?? [];
+	const totalColumns = canManageUsers ? 4 : 3;
+	const confirmRoleRemoval = async () => {
+		if (!roleRemoval) return;
+
+		const succeeded = await handleRemoveRole({
+			roleId: roleRemoval.roleId,
+			userId: roleRemoval.userId,
+		});
+		if (succeeded) setRoleRemoval(null);
+	};
+
 	return (
-		<>
-			{isLoading && <p>Loading users...</p>}
-			{error && <p>Could not load users.</p>}
-			<input
-				aria-label="Search users by email"
-				onChange={(event) => {
+		<div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+			<UserSearchHeader
+				onSearchChange={(value) => {
 					setPage(1);
-					setSearch(event.target.value);
+					setSearch(value);
 				}}
-				placeholder="Search by email"
-				value={search}
+				search={search}
+				total={data?.meta.total ?? 0}
 			/>
-			<div>
-				{data?.data.map((user) => (
-					<div key={user.id}>
-							<div>
-								<strong>{user.email}</strong>
-								<span>
-									{user.roles.length
-										? user.roles.map((role) => role.name).join(", ")
-										: "No roles"}
-								</span>
-							</div>
-							<span>{user.isActive ? "Active" : "Inactive"}</span>
-							{canManageUsers && (
-								<>
-									<button
-										disabled={statusMutation.isPending}
-										onClick={() => statusMutation.mutate({ userId: user.id, isActive: !user.isActive })}
-										type="button"
-									>
-										{user.isActive ? "Deactivate" : "Activate"}
-									</button>
-									<button onClick={() => setEditingUserId(user.id)} type="button">Edit user</button>
-									<select
-										defaultValue=""
-										disabled={assignRoleMutation.isPending}
-										onChange={(event) => {
-											if (event.target.value) {
-												assignRoleMutation.mutate({ userId: user.id, roleId: event.target.value });
-											}
-										}}
-									>
-										<option value="">Assign role</option>
-										{rolesQuery.data?.map((role) => (
-											<option key={role.id} value={role.id}>{role.name}</option>
-										))}
-									</select>
-									{user.roles.map((role) => (
-										<button
-											disabled={removeRoleMutation.isPending}
-											key={role.id}
-											onClick={() => removeRoleMutation.mutate({ userId: user.id, roleId: role.id })}
-											type="button"
-										>
-											Remove {role.name}
-										</button>
-									))}
-								</>
-							)}
-							{editingUserId === user.id && canManageUsers && (
-								<EditUserForm
-									isPending={updateMutation.isPending}
-									onCancel={() => setEditingUserId(null)}
-									onSubmit={({ email, fullName }) => updateMutation.mutate({ userId: user.id, email, fullName })}
-									user={user}
-								/>
-							)}
-					</div>
-				))}
-			</div>
-			{data && data.meta.totalPages > 1 && (
-				<div>
-					<button disabled={page === 1} onClick={() => setPage((current) => current - 1)} type="button">Previous</button>
-					<span>Page {data.meta.page} of {data.meta.totalPages}</span>
-					<button disabled={page === data.meta.totalPages} onClick={() => setPage((current) => current + 1)} type="button">Next</button>
-				</div>
+
+			<Table>
+				<colgroup>
+					<col className="w-[30%]" />
+					<col className="w-[18%]" />
+					<col />
+					{canManageUsers && <col className="w-[34%]" />}
+				</colgroup>
+				<TableHeader className="bg-slate-50/80">
+					<TableRow className="border-b border-slate-200">
+						<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+							User
+						</TableHead>
+						<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+							Status
+						</TableHead>
+						<TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+							Roles
+						</TableHead>
+						{canManageUsers && (
+							<TableHead className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+								Actions
+							</TableHead>
+						)}
+					</TableRow>
+				</TableHeader>
+				<TableBody className="divide-y divide-slate-100">
+					{isLoading && (
+						<TableRow>
+							<TableCell
+								className="px-4 py-10 text-center text-sm text-slate-500"
+								colSpan={totalColumns}
+							>
+								Loading users...
+							</TableCell>
+						</TableRow>
+					)}
+
+					{error && !isLoading && (
+						<TableRow>
+							<TableCell
+								className="px-4 py-10 text-center text-sm text-red-600"
+								colSpan={totalColumns}
+							>
+								Could not load users.
+							</TableCell>
+						</TableRow>
+					)}
+
+					{!isLoading &&
+						!error &&
+						data?.data.map((user) => (
+							<UserTableRow
+								key={user.id}
+								assignRolePending={isAssigningRole}
+								availableRoles={availableRoles}
+								canManageUsers={canManageUsers}
+								editing={editingUserId === user.id}
+								onAssignRole={(roleId) =>
+									handleAssignRole({ userId: user.id, roleId })
+								}
+								onCancelEdit={() => setEditingUserId(null)}
+								onEdit={() => setEditingUserId(user.id)}
+								onRemoveRole={(roleId, roleName) =>
+									setRoleRemoval({
+										roleId,
+										roleName,
+										userEmail: user.email,
+										userId: user.id,
+									})
+								}
+								onToggleStatus={() =>
+									handleStatusChange({
+										userId: user.id,
+										isActive: !user.isActive,
+									})
+								}
+								onUpdate={({ email }) =>
+									handleUpdate({ userId: user.id, email })
+								}
+								removeRolePending={isRemovingRole}
+								statusPending={isUpdatingStatus}
+								updatePending={isUpdating}
+								user={user}
+							/>
+						))}
+
+					{!isLoading && !error && data?.data.length === 0 && (
+						<TableRow>
+							<TableCell
+								className="px-4 py-10 text-center text-sm text-slate-500"
+								colSpan={totalColumns}
+							>
+								No users found.
+							</TableCell>
+						</TableRow>
+					)}
+				</TableBody>
+			</Table>
+
+			{!isLoading && !error && data && (
+				<UserPagination
+					onPageChange={setPage}
+					page={data.meta.page}
+					totalPages={data.meta.totalPages}
+				/>
 			)}
-		</>
+
+			<UserRoleRemoveDialog
+				onClose={() => setRoleRemoval(null)}
+				onConfirm={() => void confirmRoleRemoval()}
+				onOpenChange={(open) => {
+					if (!open) setRoleRemoval(null);
+				}}
+				open={Boolean(roleRemoval)}
+				roleName={roleRemoval?.roleName}
+				userEmail={roleRemoval?.userEmail}
+			/>
+		</div>
 	);
 };

@@ -1,53 +1,88 @@
-import axios from "axios";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { useLoginMutation } from "../api/auth.mutations.ts";
-import { useAuthStore } from "../model/authStore.ts";
-import { loginSchema, type LoginFormValues } from "../schemas/loginSchema.ts";
+import { useAuthActions } from "@/features/auth/hooks/useAuthActions.ts";
+import {
+	type LoginFormValues,
+	loginSchema,
+} from "@/features/auth/schemas/loginSchema.ts";
+import { Input } from "@/shared/components/ui/Input.tsx";
+import { Label } from "@/shared/components/ui/Label.tsx";
 
 export const LoginForm = () => {
 	const navigate = useNavigate();
-	const setAuth = useAuthStore((state) => state.setAuth);
-	const loginMutation = useLoginMutation();
-	const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+	const { handleLogin, isLoggingIn } = useAuthActions();
+
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<LoginFormValues>({
 		resolver: zodResolver(loginSchema),
 	});
-	const getServerError = (error: unknown) => {
-		if (!axios.isAxiosError(error)) return "Unable to sign in. Please try again.";
-		const message = error.response?.data?.message;
-		return typeof message === "string" ? message : "Unable to sign in. Please try again.";
-	};
 
 	const submit = async ({ email, password }: LoginFormValues) => {
-		try {
-			const data = await loginMutation.mutateAsync({ email, password });
-			setAuth(data.user, data.accessToken);
-			const destination = data.user.permissions.includes("users:read") ||
-				data.user.permissions.includes("roles:manage")
-				? "/admin/users"
-				: "/";
+		const response = await handleLogin({ email, password });
+		if (response) {
+			const destination =
+				response.user.permissions.includes("users:read") ||
+				response.user.permissions.includes("roles:manage")
+					? "/admin/users"
+					: "/";
 			navigate(destination, { replace: true });
-		} catch (error) {
-			toast.error(getServerError(error));
 		}
 	};
 
 	return (
 		<>
 			<form className="space-y-5" onSubmit={handleSubmit(submit)}>
-				<label className="block text-sm font-medium text-slate-300">Email
-					<input className="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" type="email" {...register("email")} />
-				</label>
-				{errors.email && <span className="-mt-3 block text-sm text-rose-400" role="alert">{errors.email.message}</span>}
-				<label className="block text-sm font-medium text-slate-300">Password
-					<input className="mt-2 block w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20" type="password" {...register("password")} />
-				</label>
-				{errors.password && <span className="-mt-3 block text-sm text-rose-400" role="alert">{errors.password.message}</span>}
-				<button className="w-full rounded-lg bg-cyan-400 px-4 py-2.5 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60" disabled={loginMutation.isPending} type="submit">{loginMutation.isPending ? "Signing in..." : "Sign in"}</button>
+				<div>
+					<Label htmlFor="login-email">Email</Label>
+					<Input
+						className="mt-2"
+						id="login-email"
+						type="email"
+						placeholder="name@example.com"
+						{...register("email")}
+					/>
+				</div>
+				{errors.email && (
+					<span className="-mt-3 block text-sm text-rose-400" role="alert">
+						{errors.email.message}
+					</span>
+				)}
+				<div>
+					<Label htmlFor="login-password">Password</Label>
+					<Input
+						className="mt-2"
+						id="login-password"
+						type="password"
+						placeholder="••••••••"
+						{...register("password")}
+					/>
+				</div>
+				{errors.password && (
+					<span className="-mt-3 block text-sm text-rose-400" role="alert">
+						{errors.password.message}
+					</span>
+				)}
+				<button
+					className="w-full rounded-md bg-slate-900 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+					disabled={isLoggingIn}
+					type="submit"
+				>
+					{isLoggingIn ? "Signing in..." : "Sign in"}
+				</button>
 			</form>
-			<p className="mt-6 text-center text-sm text-slate-400">New here? <Link className="font-medium text-cyan-400 hover:text-cyan-300" to="/register">Create an account</Link></p>
+			<p className="mt-6 text-center text-sm text-slate-500">
+				New here?{" "}
+				<Link
+					className="font-medium text-slate-900 hover:underline"
+					to="/register"
+				>
+					Create an account
+				</Link>
+			</p>
 		</>
 	);
 };
