@@ -5,10 +5,9 @@ import {
 	UnauthorizedException,
 } from "@nestjs/common";
 import { compare, hash } from "bcryptjs";
-import { eq } from "drizzle-orm";
 import type { Database } from "../db/drizzle.provider.js";
 import { DRIZZLE } from "../db/drizzle.provider.js";
-import { roles, users, usersToRoles } from "../db/schema/index.js";
+import { users, usersToRoles } from "../db/schema/index.js";
 import { LoginDto } from "./dto/login.dto.js";
 import { RegisterDto } from "./dto/register.dto.js";
 import { TokenService } from "./token.service.js";
@@ -23,11 +22,10 @@ export class AuthService {
 	async register(dto: RegisterDto) {
 		const email = dto.email.toLowerCase();
 
-		const [existingUser] = await this.db
-			.select({ id: users.id })
-			.from(users)
-			.where(eq(users.email, email))
-			.limit(1);
+		const existingUser = await this.db.query.users.findFirst({
+			columns: { id: true },
+			where: { email },
+		});
 
 		if (existingUser) {
 			throw new ConflictException("Email is already registered");
@@ -42,11 +40,10 @@ export class AuthService {
 				})
 				.returning({ id: users.id, email: users.email });
 
-			const [userRole] = await tx
-				.select({ id: roles.id })
-				.from(roles)
-				.where(eq(roles.name, "user"))
-				.limit(1);
+			const userRole = await tx.query.roles.findFirst({
+				columns: { id: true },
+				where: { name: "user" },
+			});
 
 			if (!userRole) {
 				throw new Error('Default role "user" was not found');
@@ -70,26 +67,30 @@ export class AuthService {
 	async login(dto: LoginDto) {
 		const email = dto.email.toLowerCase();
 
-		const [user] = await this.db
-			.select()
-			.from(users)
-			.where(eq(users.email, email))
-			.limit(1);
+		const user = await this.db.query.users.findFirst({
+			columns: {
+				id: true,
+				email: true,
+				passwordHash: true,
+				isActive: true,
+			},
+			where: { email },
+		});
 
 		if (!user?.isActive || !(await compare(dto.password, user.passwordHash))) {
 			throw new UnauthorizedException("Invalid email or password");
 		}
 
-		const userRoles = await this.db
-			.select({ name: roles.name })
-			.from(usersToRoles)
-			.innerJoin(roles, eq(usersToRoles.roleId, roles.id))
-			.where(eq(usersToRoles.userId, user.id));
+		const userRoles = await this.db.query.usersToRoles.findMany({
+			columns: {},
+			where: { userId: user.id },
+			with: { role: { columns: { name: true } } },
+		});
 
 		return this.tokenService.issueTokens({
 			id: user.id,
 			email: user.email,
-			roles: userRoles.map((role) => role.name),
+			roles: userRoles.flatMap(({ role }) => (role ? [role.name] : [])),
 		});
 	}
 

@@ -6,15 +6,9 @@ import {
 	Injectable,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { eq } from "drizzle-orm";
 import type { Request } from "express";
 import type { Database } from "../../db/drizzle.provider.js";
 import { DRIZZLE } from "../../db/drizzle.provider.js";
-import {
-	permissions,
-	rolesToPermissions,
-	usersToRoles,
-} from "../../db/schema/index.js";
 import type { AuthenticatedUser } from "../auth.types.js";
 import { PERMISSIONS_KEY } from "../decorators/permissions.decorator.js";
 
@@ -38,21 +32,30 @@ export class PermissionsGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-		const permissionRows = await this.db
-			.select({ slug: permissions.slug })
-			.from(usersToRoles)
-			.innerJoin(
-				rolesToPermissions,
-				eq(rolesToPermissions.roleId, usersToRoles.roleId),
-			)
-			.innerJoin(
-				permissions,
-				eq(permissions.id, rolesToPermissions.permissionId),
-			)
-			.where(eq(usersToRoles.userId, request.user.id));
+		const userRoles = await this.db.query.usersToRoles.findMany({
+			columns: {},
+			where: { userId: request.user.id },
+			with: {
+				role: {
+					columns: {},
+					with: {
+						rolePermissions: {
+							columns: {},
+							with: { permission: { columns: { slug: true } } },
+						},
+					},
+				},
+			},
+		});
 
 		const grantedPermissions = new Set(
-			permissionRows.map((permission) => permission.slug),
+			userRoles.flatMap(({ role }) =>
+				role
+					? role.rolePermissions.flatMap(({ permission }) =>
+							permission ? [permission.slug] : [],
+						)
+					: [],
+			),
 		);
 		const hasPermissions = requiredPermissions.every((permission) =>
 			grantedPermissions.has(permission),

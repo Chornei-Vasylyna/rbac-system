@@ -6,11 +6,9 @@ import {
 	UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { eq } from "drizzle-orm";
 import type { Request } from "express";
 import type { Database } from "../../db/drizzle.provider.js";
 import { DRIZZLE } from "../../db/drizzle.provider.js";
-import { users } from "../../db/schema/index.js";
 import type { AuthenticatedUser, JwtPayload } from "../auth.types.js";
 
 type AuthenticatedRequest = Request & { user?: AuthenticatedUser };
@@ -37,11 +35,10 @@ export class JwtAuthGuard implements CanActivate {
 				throw new UnauthorizedException("Invalid access token");
 			}
 
-			const [user] = await this.db
-				.select({ id: users.id, email: users.email, isActive: users.isActive })
-				.from(users)
-				.where(eq(users.id, payload.sub))
-				.limit(1);
+			const user = await this.db.query.users.findFirst({
+				columns: { id: true, email: true, isActive: true },
+				where: { id: payload.sub },
+			});
 
 			if (!user?.isActive) {
 				throw new UnauthorizedException("User is inactive");

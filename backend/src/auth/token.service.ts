@@ -8,12 +8,8 @@ import ms from "ms";
 import type { Database } from "../db/drizzle.provider.js";
 import { DRIZZLE } from "../db/drizzle.provider.js";
 import {
-	permissions,
 	refreshTokens,
-	roles,
-	rolesToPermissions,
 	users,
-	usersToRoles,
 } from "../db/schema/index.js";
 import type {
 	AuthenticatedUser,
@@ -167,29 +163,42 @@ export class TokenService {
 	}
 
 	private async getUserRoles(userId: string) {
-		const userRoles = await this.db
-			.select({ name: roles.name })
-			.from(usersToRoles)
-			.innerJoin(roles, eq(usersToRoles.roleId, roles.id))
-			.where(eq(usersToRoles.userId, userId));
+		const userRoles = await this.db.query.usersToRoles.findMany({
+			columns: {},
+			where: { userId },
+			with: { role: { columns: { name: true } } },
+		});
 
-		return userRoles.map((role) => role.name);
+		return userRoles.flatMap(({ role }) => (role ? [role.name] : []));
 	}
 
 	private async getUserPermissions(userId: string) {
-		const userPermissions = await this.db
-			.select({ slug: permissions.slug })
-			.from(usersToRoles)
-			.innerJoin(
-				rolesToPermissions,
-				eq(rolesToPermissions.roleId, usersToRoles.roleId),
-			)
-			.innerJoin(
-				permissions,
-				eq(permissions.id, rolesToPermissions.permissionId),
-			)
-			.where(eq(usersToRoles.userId, userId));
+		const userRoles = await this.db.query.usersToRoles.findMany({
+			columns: {},
+			where: { userId },
+			with: {
+				role: {
+					columns: {},
+					with: {
+						rolePermissions: {
+							columns: {},
+							with: { permission: { columns: { slug: true } } },
+						},
+					},
+				},
+			},
+		});
 
-		return [...new Set(userPermissions.map((permission) => permission.slug))];
+		return [
+			...new Set(
+				userRoles.flatMap(({ role }) =>
+					role
+						? role.rolePermissions.flatMap(({ permission }) =>
+								permission ? [permission.slug] : [],
+							)
+						: [],
+				),
+			),
+		];
 	}
 }

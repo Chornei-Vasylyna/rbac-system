@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm/_relations";
 import { pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-core";
 import { roles } from "./roles.js";
 import { users } from "./users.js";
@@ -18,14 +17,3 @@ export const usersToRoles = pgTable(
 	},
 	(t) => [primaryKey({ columns: [t.userId, t.roleId] })],
 );
-
-export const usersToRolesRelations = relations(usersToRoles, ({ one }) => ({
-	user: one(users, {
-		fields: [usersToRoles.userId],
-		references: [users.id],
-	}),
-	role: one(roles, {
-		fields: [usersToRoles.roleId],
-		references: [roles.id],
-	}),
-}));

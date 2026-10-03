@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm/_relations";
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./users.js";
 
@@ -13,10 +12,3 @@ export const refreshTokens = pgTable("refresh_tokens", {
 		.defaultNow()
 		.notNull(),
 });
-
-export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
-	user: one(users, {
-		fields: [refreshTokens.userId],
-		references: [users.id],
-	}),
-}));

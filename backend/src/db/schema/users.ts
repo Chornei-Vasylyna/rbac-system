@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm/_relations";
 import {
 	boolean,
 	pgTable,
@@ -7,8 +6,6 @@ import {
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
-import { refreshTokens } from "./refresh-tokens.js";
-import { usersToRoles } from "./users-to-roles.js";
 
 export const users = pgTable("users", {
 	id: uuid("id").defaultRandom().primaryKey(),
@@ -22,8 +19,3 @@ export const users = pgTable("users", {
 		.defaultNow()
 		.notNull(),
 });
-
-export const usersRelations = relations(users, ({ many }) => ({
-	userRoles: many(usersToRoles),
-	refreshTokens: many(refreshTokens),
-}));

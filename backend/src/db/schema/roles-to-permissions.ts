@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm/_relations";
 import { pgTable, primaryKey, timestamp, uuid } from "drizzle-orm/pg-core";
 import { permissions } from "./permissions.js";
 import { roles } from "./roles.js";
@@ -17,18 +16,4 @@ export const rolesToPermissions = pgTable(
 			.notNull(),
 	},
 	(t) => [primaryKey({ columns: [t.roleId, t.permissionId] })],
-);
-
-export const rolesToPermissionsRelations = relations(
-	rolesToPermissions,
-	({ one }) => ({
-		role: one(roles, {
-			fields: [rolesToPermissions.roleId],
-			references: [roles.id],
-		}),
-		permission: one(permissions, {
-			fields: [rolesToPermissions.permissionId],
-			references: [permissions.id],
-		}),
-	}),
 );
