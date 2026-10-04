@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cn } from "cn";
 import { X } from "lucide-react";
 import type { Role } from "@/features/roles/api/roles.types.ts";
@@ -20,7 +21,7 @@ export interface UserTableRowProps {
 	onCancelEdit: () => void;
 	onUpdate: (values: { email: string }) => void;
 	onToggleStatus: () => void;
-	onAssignRole: (roleId: string) => void;
+	onAssignRole: (roleId: string) => Promise<boolean>;
 	onRemoveRole: (roleId: string, roleName: string) => void;
 }
 
@@ -39,8 +40,17 @@ export const UserTableRow = ({
 	onToggleStatus,
 	onAssignRole,
 	onRemoveRole,
-}: UserTableRowProps) => (
-	<>
+}: UserTableRowProps) => {
+	const [selectedRoleId, setSelectedRoleId] = useState("");
+
+	const handleRoleChange = async (roleId: string) => {
+		setSelectedRoleId(roleId);
+		const succeeded = await onAssignRole(roleId);
+		if (succeeded) setSelectedRoleId("");
+	};
+
+	return (
+		<>
 		<TableRow>
 			<TableCell className="px-4 py-3.5 align-top">
 				<span className="block truncate font-medium text-slate-900">
@@ -109,15 +119,7 @@ export const UserTableRow = ({
 			{canManageUsers && (
 				<TableCell className="px-4 py-3.5 text-right align-top">
 					<div className="flex flex-wrap items-center justify-end gap-1.5">
-						<Button
-							className="h-8 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
-							disabled={statusPending}
-							onClick={onToggleStatus}
-							size="sm"
-							variant="outline"
-						>
-							{user.isActive ? "Deactivate" : "Activate"}
-						</Button>
+						
 						<Button
 							className="h-8 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900"
 							onClick={onEdit}
@@ -129,10 +131,12 @@ export const UserTableRow = ({
 						<select
 							aria-label={`Assign role to ${user.email}`}
 							className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-							defaultValue=""
+							value={selectedRoleId}
 							disabled={assignRolePending}
 							onChange={(event) => {
-								if (event.target.value) onAssignRole(event.target.value);
+								if (event.target.value) {
+									handleRoleChange(event.target.value);
+								}
 							}}
 						>
 							<option value="">Assign role</option>
@@ -142,6 +146,19 @@ export const UserTableRow = ({
 								</option>
 							))}
 						</select>
+						<Button
+							className={cn(
+								"h-8 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-slate-900",
+								user.isActive &&
+									"border-rose-200 bg-rose-50/60 text-rose-700 hover:bg-rose-100 hover:text-rose-800",
+							)}
+							disabled={statusPending}
+							onClick={onToggleStatus}
+							size="sm"
+							variant="outline"
+						>
+							{user.isActive ? "Deactivate" : "Activate"}
+						</Button>
 					</div>
 				</TableCell>
 			)}
@@ -160,4 +177,5 @@ export const UserTableRow = ({
 			</TableRow>
 		)}
 	</>
-);
+	);
+};

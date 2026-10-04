@@ -38,3 +38,13 @@ export const PermissionRoute = ({ permission }: { permission: string }) => {
 
 	return <Outlet />;
 };
+
+export const AdminUsersRoute = () => {
+	const user = useAuthStore((state) => state.user);
+
+	if (!user?.permissions.includes("users:read")) {
+		return <Navigate to="/403" replace />;
+	}
+
+	return <Outlet />;
+};

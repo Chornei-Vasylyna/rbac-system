@@ -27,7 +27,7 @@ export const usersService = {
 	removeRole: async ({ userId, roleId }: UserRoleDto): Promise<void> => {
 		await baseApi.delete(apiEndpoints.users.removeRole(userId, roleId));
 	},
-	
+
 	updateStatus: async ({
 		userId,
 		isActive,

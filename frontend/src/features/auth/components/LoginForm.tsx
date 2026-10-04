@@ -24,10 +24,10 @@ export const LoginForm = () => {
 	const submit = async ({ email, password }: LoginFormValues) => {
 		const response = await handleLogin({ email, password });
 		if (response) {
-			const destination =
-				response.user.permissions.includes("users:read") ||
-				response.user.permissions.includes("roles:manage")
-					? "/admin/users"
+			const destination = response.user.permissions.includes("users:read")
+				? "/admin/users"
+				: response.user.permissions.includes("roles:manage")
+					? "/admin/roles"
 					: "/";
 			navigate(destination, { replace: true });
 		}

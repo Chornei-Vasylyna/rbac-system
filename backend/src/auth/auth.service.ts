@@ -1,5 +1,6 @@
 import {
 	ConflictException,
+	ForbiddenException,
 	Inject,
 	Injectable,
 	UnauthorizedException,
@@ -77,8 +78,12 @@ export class AuthService {
 			where: { email },
 		});
 
-		if (!user?.isActive || !(await compare(dto.password, user.passwordHash))) {
+		if (!user || !(await compare(dto.password, user.passwordHash))) {
 			throw new UnauthorizedException("Invalid email or password");
+		}
+
+		if (!user.isActive) {
+			throw new ForbiddenException("Account is deactivated");
 		}
 
 		const userRoles = await this.db.query.usersToRoles.findMany({

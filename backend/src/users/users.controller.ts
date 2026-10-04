@@ -11,6 +11,7 @@ import {
 	UseGuards,
 } from "@nestjs/common";
 import { Permissions } from "../auth/decorators/permissions.decorator.js";
+import { AdminUsersGuard } from "../auth/guards/admin-users.guard.js";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard.js";
 import { PermissionsGuard } from "../auth/guards/permissions.guard.js";
 import { AssignRoleDto } from "./dto/assign-role.dto.js";
@@ -25,7 +26,7 @@ export class UsersController {
 	constructor(private readonly usersService: UsersService) {}
 
 	@Get()
-	@Permissions("users:read")
+	@UseGuards(AdminUsersGuard)
 	findAll(@Query() query: ListUsersDto) {
 		return this.usersService.findAll(query);
 	}

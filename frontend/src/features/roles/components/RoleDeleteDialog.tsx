@@ -9,7 +9,6 @@ import {
 } from "@/shared/components/ui/Dialog";
 
 type RoleDeleteDialogProps = {
-	isDeleting: boolean;
 	onClose: () => void;
 	onConfirm: () => void;
 	onOpenChange: (open: boolean) => void;
@@ -18,7 +17,6 @@ type RoleDeleteDialogProps = {
 };
 
 export const RoleDeleteDialog = ({
-	isDeleting,
 	onClose,
 	onConfirm,
 	onOpenChange,
@@ -39,7 +37,6 @@ export const RoleDeleteDialog = ({
 			</DialogHeader>
 			<DialogFooter>
 				<Button
-					disabled={isDeleting}
 					onClick={onClose}
 					type="button"
 					variant="outline"
@@ -48,11 +45,10 @@ export const RoleDeleteDialog = ({
 				</Button>
 				<Button
 					className="bg-red-600 text-white hover:bg-red-700"
-					disabled={isDeleting}
 					onClick={onConfirm}
 					type="button"
 				>
-					{isDeleting ? "Deleting..." : "Delete role"}
+					Delete role
 				</Button>
 			</DialogFooter>
 		</DialogContent>

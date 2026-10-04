@@ -147,7 +147,6 @@ export const RoleList = () => {
 			/>
 
 			<RoleDeleteDialog
-				isDeleting={isDeleting}
 				onClose={() => setDeletingRoleId(null)}
 				onConfirm={handleDelete}
 				onOpenChange={(open) => {

@@ -25,7 +25,8 @@ export const createResponseInterceptor =
 		if (
 			error.response?.status !== 401 ||
 			!originalRequest ||
-			originalRequest._retry
+			originalRequest._retry ||
+			originalRequest.url?.startsWith("/auth/")
 		) {
 			return Promise.reject(error);
 		}

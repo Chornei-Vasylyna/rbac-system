@@ -1,24 +1,31 @@
 import { createBrowserRouter } from "react-router-dom";
+import { GlobalErrorFallback } from "@/app/GlobalErrorBoundary.tsx";
 import { AppLayout } from "@/app/layout/AppLayout.tsx";
-import { PermissionRoute, ProtectedRoute } from "@/app/router/guards.tsx";
+import {
+	AdminUsersRoute,
+	PermissionRoute,
+	ProtectedRoute,
+} from "@/app/router/guards.tsx";
 import { AdminRolesPage } from "@/pages/AdminRolesPage.tsx";
 import { AdminUsersPage } from "@/pages/AdminUsersPage.tsx";
 import { DashboardPage } from "@/pages/DashboardPage.tsx";
 import { ForbiddenPage } from "@/pages/ForbiddenPage.tsx";
 import { LoginPage } from "@/pages/LoginPage.tsx";
+import { NotFoundPage } from "@/pages/NotFoundPage.tsx";
 import { RegisterPage } from "@/pages/RegisterPage.tsx";
 
 export const router = createBrowserRouter([
 	{
 		path: "/",
 		element: <ProtectedRoute />,
+		errorElement: <GlobalErrorFallback />,
 		children: [
 			{
 				element: <AppLayout />,
 				children: [
 					{ index: true, element: <DashboardPage /> },
 					{
-						element: <PermissionRoute permission="users:read" />,
+						element: <AdminUsersRoute />,
 						children: [{ path: "admin/users", element: <AdminUsersPage /> }],
 					},
 					{
@@ -29,7 +36,8 @@ export const router = createBrowserRouter([
 			},
 		],
 	},
-	{ path: "/login", element: <LoginPage /> },
-	{ path: "/register", element: <RegisterPage /> },
-	{ path: "/403", element: <ForbiddenPage /> },
+	{ path: "/login", element: <LoginPage />, errorElement: <GlobalErrorFallback /> },
+	{ path: "/register", element: <RegisterPage />, errorElement: <GlobalErrorFallback /> },
+	{ path: "/403", element: <ForbiddenPage />, errorElement: <GlobalErrorFallback /> },
+	{ path: "*", element: <NotFoundPage />, errorElement: <GlobalErrorFallback /> },
 ]);

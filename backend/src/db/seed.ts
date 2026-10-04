@@ -20,16 +20,35 @@ const roleDefinitions = [
 ];
 
 const permissionDefinitions = [
+	{ slug: "profile:read", description: "Read own profile" },
 	{ slug: "users:read", description: "Read user data" },
 	{ slug: "users:manage", description: "Manage users" },
 	{ slug: "roles:manage", description: "Manage roles and permissions" },
 ];
 
 async function seed() {
-	const testUserEmail = (
-		process.env.TEST_USER_EMAIL ?? "test@example.com"
+	const adminEmail = (
+		process.env.TEST_USER_EMAIL ?? "admin@example.com"
 	).toLowerCase();
 	const testUserPassword = process.env.TEST_USER_PASSWORD ?? "12345678";
+	const seededUserEmails = [
+		"test@gmail.com",
+		"test2@gmail.com",
+		"test3@gmail.com",
+		"test4@gmail.com",
+		"test5@gmail.com",
+		"test6@gmail.com",
+		"test7@gmail.com",
+	].filter((email) => email !== adminEmail);
+	const seedUsers: Array<{ email: string; roleId: "admin" | "user" }> = [
+		{ email: adminEmail, roleId: "admin" },
+		...seededUserEmails.map(
+			(email): { email: string; roleId: "user" } => ({
+				email,
+				roleId: "user",
+			}),
+		),
+	];
 
 	await db.transaction(async (tx) => {
 		for (const role of roleDefinitions) {
@@ -64,44 +83,64 @@ async function seed() {
 			)
 			.onConflictDoNothing();
 
-		const readPermissions = seededPermissions.filter(
-			(permission) => permission.slug === "users:read",
+		const profilePermissions = seededPermissions.filter(
+			(permission) => permission.slug === "profile:read",
 		);
+		await tx
+			.delete(rolesToPermissions)
+			.where(eq(rolesToPermissions.roleId, userRole.id));
 		await tx
 			.insert(rolesToPermissions)
 			.values(
-				readPermissions.map((permission) => ({
+				profilePermissions.map((permission) => ({
 					roleId: userRole.id,
 					permissionId: permission.id,
 				})),
 			)
 			.onConflictDoNothing();
 
-		let [testUser] = await tx
-			.select({ id: users.id })
-			.from(users)
-			.where(eq(users.email, testUserEmail))
-			.limit(1);
-		if (!testUser) {
-			[testUser] = await tx
-				.insert(users)
-				.values({
-					email: testUserEmail,
-					passwordHash: await hash(testUserPassword, 12),
-				})
-				.returning({ id: users.id });
-		}
-		if (!testUser) {
-			throw new Error(`Failed to create test user ${testUserEmail}`);
-		}
+		const passwordHash = await hash(testUserPassword, 12);
+		const roleIds = {
+			admin: adminRole.id,
+			user: userRole.id,
+		} as const;
 
-		await tx
-			.insert(usersToRoles)
-			.values({ userId: testUser.id, roleId: adminRole.id })
-			.onConflictDoNothing();
+		for (const seedUser of seedUsers) {
+			let [user] = await tx
+				.select({ id: users.id })
+				.from(users)
+				.where(eq(users.email, seedUser.email))
+				.limit(1);
+
+			if (!user) {
+				[user] = await tx
+					.insert(users)
+					.values({
+						email: seedUser.email,
+						passwordHash,
+					})
+					.returning({ id: users.id });
+			}
+
+			if (!user) {
+				throw new Error(`Failed to create seed user ${seedUser.email}`);
+			}
+
+			await tx
+				.update(users)
+				.set({ passwordHash, updatedAt: new Date() })
+				.where(eq(users.id, user.id));
+
+			await tx
+				.insert(usersToRoles)
+				.values({ userId: user.id, roleId: roleIds[seedUser.roleId] })
+				.onConflictDoNothing();
+		}
 	});
 
-	console.log(`RBAC seed completed for ${testUserEmail}`);
+	console.log(
+		`RBAC seed completed for ${seedUsers.length} users. Admin: ${adminEmail}`,
+	);
 }
 
 try {
