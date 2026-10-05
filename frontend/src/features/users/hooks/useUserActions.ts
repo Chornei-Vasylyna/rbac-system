@@ -11,6 +11,7 @@ import type {
 	UpdateUserDto,
 	UpdateUserStatusDto,
 	UserRoleDto,
+	UsersResponse,
 } from "@/features/users/api/users.types.ts";
 import { getApiErrorMessage } from "@/shared/api/getApiErrorMessage.ts";
 
@@ -47,14 +48,33 @@ export const useUserActions = ({
 		}
 	};
 
-	const handleUpdate = async (payload: UpdateUserDto) => {
-		const succeeded = await runMutation(
-			updateMutation,
-			payload,
-			"Could not update user.",
-		);
-		if (succeeded) {
+	const handleUpdate = async (
+		payload: UpdateUserDto,
+	): Promise<void> => {
+		try {
+			const updatedUser = await updateMutation.mutateAsync(payload);
+			await invalidateUsers();
+			queryClient.setQueriesData<UsersResponse>(
+				{ queryKey: usersKeys.all },
+				(current) =>
+					current
+						? {
+								...current,
+								data: current.data.map((user) =>
+									user.id === updatedUser.id
+										? { ...user, email: updatedUser.email }
+										: user,
+								),
+							}
+						: current,
+			);
 			onUpdateSuccess?.();
+		} catch (error) {
+			const message = getApiErrorMessage(
+				error,
+				"Could not update user. Please check the email and try again.",
+			);
+			toast.error(message);
 		}
 	};
 

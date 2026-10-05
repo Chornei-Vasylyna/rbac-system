@@ -98,10 +98,20 @@ export class UsersService {
 
 			if (!existingUser) throw new NotFoundException("User not found");
 
+			const normalizedEmail = dto.email.toLowerCase();
+			const emailOwner = await this.db.query.users.findFirst({
+				columns: { id: true },
+				where: { email: normalizedEmail },
+			});
+
+			if (emailOwner && emailOwner.id !== userId) {
+				throw new ConflictException("Email is already in use");
+			}
+
 			await this.db
 				.update(users)
 				.set({
-					email: dto.email.toLowerCase(),
+					email: normalizedEmail,
 					updatedAt: new Date(),
 				})
 				.where(eq(users.id, userId));
@@ -117,8 +127,10 @@ export class UsersService {
 			});
 		} catch (error) {
 			if (
-				error instanceof Error &&
-				error.message.includes("users_email_unique")
+				error &&
+				typeof error === "object" &&
+				"code" in error &&
+				error.code === "23505"
 			) {
 				throw new ConflictException("Email is already in use");
 			}

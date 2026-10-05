@@ -19,7 +19,7 @@ export interface UserTableRowProps {
 	removeRolePending: boolean;
 	onEdit: () => void;
 	onCancelEdit: () => void;
-	onUpdate: (values: { email: string }) => void;
+	onUpdate: (values: { email: string }) => Promise<void>;
 	onToggleStatus: () => void;
 	onAssignRole: (roleId: string) => Promise<boolean>;
 	onRemoveRole: (roleId: string, roleName: string) => void;

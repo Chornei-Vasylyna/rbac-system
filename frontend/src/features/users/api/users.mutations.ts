@@ -3,11 +3,12 @@ import { usersService } from "@/features/users/api/users.service.ts";
 import type {
 	UpdateUserDto,
 	UpdateUserStatusDto,
+	UpdatedUser,
 	UserRoleDto,
 } from "@/features/users/api/users.types.ts";
 
 export const useUpdateUserMutation = () => {
-	return useMutation<void, Error, UpdateUserDto>({
+	return useMutation<UpdatedUser, Error, UpdateUserDto>({
 		mutationFn: usersService.update,
 	});
 };

@@ -1,6 +1,7 @@
 import type {
 	UpdateUserDto,
 	UpdateUserStatusDto,
+	UpdatedUser,
 	UserRoleDto,
 	UsersResponse,
 } from "@/features/users/api/users.types.ts";
@@ -14,10 +15,14 @@ export const usersService = {
 		return data;
 	},
 
-	update: async ({ userId, email }: UpdateUserDto): Promise<void> => {
-		await baseApi.patch(apiEndpoints.users.update(userId), {
+	update: async ({ userId, email }: UpdateUserDto): Promise<UpdatedUser> => {
+		const { data } = await baseApi.patch<UpdatedUser>(
+			apiEndpoints.users.update(userId),
+			{
 			email,
-		});
+			},
+		);
+		return data;
 	},
 
 	assignRole: async ({ userId, roleId }: UserRoleDto): Promise<void> => {

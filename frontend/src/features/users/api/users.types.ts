@@ -24,6 +24,13 @@ export type UpdateUserDto = {
 	email: string;
 };
 
+export type UpdatedUser = {
+	id: string;
+	email: string;
+	isActive: boolean;
+	updatedAt: string;
+};
+
 export type UpdateUserStatusDto = {
 	userId: string;
 	isActive: boolean;
